@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+
+# Environment and secrets
+.env
+.env.*
+mise.local.toml
+*.token
+*.key
+*.pem
+
+# Editor / OS
+.DS_Store
+*.log
+.superpowers/

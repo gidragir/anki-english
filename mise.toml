@@ -1,0 +1,14 @@
+[tools]
+bun = "latest"
+
+[tasks.build]
+description = "Build application for production"
+run = "bun run build"
+
+[tasks.dev]
+description = "Start Vite development server"
+run = "bun run dev"
+
+[tasks.preview]
+description = "Preview built application"
+run = "bun run preview"

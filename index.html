@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="description" content="Anki English Flashcards Web App" />
+    <meta name="theme-color" content="#0f172a" />
+    <title>Anki English Cards</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="app-header">
+        <div class="header-title">
+          <span class="logo-icon">📇</span>
+          <h1>Anki English</h1>
+        </div>
+        <div class="header-actions">
+          <button id="btn-shuffle" class="icon-btn" title="Перемешать карточки" aria-label="Перемешать">🔀</button>
+          <button id="btn-import" class="btn btn-secondary" title="Импорт новых слов">+ Слова</button>
+          <button id="btn-settings" class="icon-btn" title="Настройки GitHub" aria-label="Настройки">⚙️</button>
+        </div>
+      </header>
+
+      <main class="main-content">
+        <div class="card-scene">
+          <div id="flashcard" class="flashcard" role="button" tabindex="0" aria-label="Флеш-карточка, нажмите для перевода">
+            <div class="card-face card-front">
+              <span class="card-label">ENGLISH</span>
+              <div class="word-text" id="front-word">Loading...</div>
+              <span class="hint-text">Нажмите, чтобы перевернуть</span>
+            </div>
+            <div class="card-face card-back">
+              <span class="card-label">РУССКИЙ</span>
+              <div class="word-text" id="back-word">...</div>
+              <span class="hint-text">Нажмите, чтобы вернуться</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="controls-panel">
+          <button id="btn-prev" class="control-btn" title="Предыдущее слово" aria-label="Предыдущее">
+            <span class="btn-arrow">←</span> Назад
+          </button>
+          <div class="deck-counter" id="deck-counter" aria-live="polite">0 / 0</div>
+          <button id="btn-next" class="control-btn" title="Следующее слово" aria-label="Следующее">
+            Вперед <span class="btn-arrow">→</span>
+          </button>
+        </div>
+
+        <div class="quick-status" id="quick-status"></div>
+      </main>
+
+      <!-- Import Modal -->
+      <div id="modal-import" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="import-title">
+        <div class="modal-card">
+          <div class="modal-header">
+            <h2 id="import-title">Добавить новые слова</h2>
+            <button class="modal-close" id="btn-close-import" aria-label="Закрыть">&times;</button>
+          </div>
+          <div class="modal-body">
+            <p class="modal-desc">
+              Вставьте JSON-массив со словами в формате:
+            </p>
+            <pre class="code-example">[
+  {"en": "clean", "ru": "чистый"},
+  {"en": "improve", "ru": "улучшать"}
+]</pre>
+            <textarea
+              id="import-json-input"
+              class="json-textarea"
+              placeholder='[{"en": "...", "ru": "..."}]'
+              rows="6"
+              spellcheck="false"
+            ></textarea>
+            <div id="import-preview" class="import-preview hidden"></div>
+          </div>
+          <div class="modal-footer">
+            <button id="btn-validate-json" class="btn btn-secondary">Проверить</button>
+            <button id="btn-save-words" class="btn btn-primary" disabled>Сохранить</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings Modal -->
+      <div id="modal-settings" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+        <div class="modal-card">
+          <div class="modal-header">
+            <h2 id="settings-title">Настройки синхронизации</h2>
+            <button class="modal-close" id="btn-close-settings" aria-label="Закрыть">&times;</button>
+          </div>
+          <div class="modal-body">
+            <p class="modal-desc">
+              Токен и параметры хранятся строго в вашем браузере (<code>localStorage</code>) и используются для прямой отправки обновленного словаря в GitHub через API.
+            </p>
+            <div class="form-group">
+              <label for="cfg-token">GitHub Personal Access Token (PAT):</label>
+              <input type="password" id="cfg-token" class="form-input" placeholder="ghp_... или github_pat_..." autocomplete="off" />
+              <small class="field-hint">Требуется разрешение: <code>Contents (Read and Write)</code></small>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="cfg-owner">Владелец (Owner):</label>
+                <input type="text" id="cfg-owner" class="form-input" placeholder="например: user" />
+              </div>
+              <div class="form-group">
+                <label for="cfg-repo">Репозиторий (Repo):</label>
+                <input type="text" id="cfg-repo" class="form-input" placeholder="anki-english" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="cfg-branch">Ветка (Branch):</label>
+                <input type="text" id="cfg-branch" class="form-input" value="main" />
+              </div>
+              <div class="form-group">
+                <label for="cfg-path">Путь к файлу:</label>
+                <input type="text" id="cfg-path" class="form-input" value="public/words.json" />
+              </div>
+            </div>
+            <div id="settings-status" class="settings-status hidden"></div>
+          </div>
+          <div class="modal-footer">
+            <button id="btn-test-connection" class="btn btn-secondary">Проверить связь</button>
+            <button id="btn-save-settings" class="btn btn-primary">Сохранить</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
