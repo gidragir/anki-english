@@ -153,6 +153,7 @@ body {
   max-width: 440px;
   height: 290px;
   perspective: 1200px;
+  -webkit-perspective: 1200px;
 }
 
 .flashcard {
@@ -160,6 +161,7 @@ body {
   height: 100%;
   position: relative;
   transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
   transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
   cursor: pointer;
   user-select: none;
@@ -176,6 +178,7 @@ body {
   top: 0;
   left: 0;
   backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
   border-radius: var(--radius-lg);
   padding: 24px;
   display: flex;

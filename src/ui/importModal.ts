@@ -11,6 +11,7 @@ export class ImportModalUI {
   private validateBtn: HTMLButtonElement;
   private saveBtn: HTMLButtonElement;
   private previewEl: HTMLElement;
+  private exportBtn: HTMLButtonElement;
   private validWordsCache: WordItem[] | null = null;
 
   constructor(store: DeckStore) {
@@ -22,6 +23,7 @@ export class ImportModalUI {
     this.textareaEl = document.getElementById('import-json-input') as HTMLTextAreaElement;
     this.validateBtn = document.getElementById('btn-validate-json') as HTMLButtonElement;
     this.saveBtn = document.getElementById('btn-save-words') as HTMLButtonElement;
+    this.exportBtn = document.getElementById('btn-export-json') as HTMLButtonElement;
     this.previewEl = document.getElementById('import-preview') as HTMLElement;
 
     this.initEvents();
@@ -30,10 +32,20 @@ export class ImportModalUI {
   private initEvents(): void {
     this.openBtn.addEventListener('click', () => this.open());
     this.closeBtn.addEventListener('click', () => this.close());
+    this.exportBtn.addEventListener('click', () => {
+      this.store.downloadWordsJson();
+    });
 
     // Close on clicking backdrop
     this.modalEl.addEventListener('click', (e) => {
       if (e.target === this.modalEl) {
+        this.close();
+      }
+    });
+
+    // Close on Escape key
+    window.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !this.modalEl.classList.contains('hidden')) {
         this.close();
       }
     });
@@ -85,9 +97,11 @@ export class ImportModalUI {
     let duplicateCount = 0;
 
     for (const w of res.data) {
-      if (existingKeys.has(w.en.trim().toLowerCase())) {
+      const key = w.en.trim().toLowerCase();
+      if (existingKeys.has(key)) {
         duplicateCount++;
       } else {
+        existingKeys.add(key);
         newCount++;
       }
     }
@@ -118,9 +132,14 @@ export class ImportModalUI {
         msg += ' Сохранено локально.';
       }
 
-      alert(msg);
+      this.previewEl.classList.remove('hidden', 'status-error');
+      this.previewEl.classList.add('status-success');
+      this.previewEl.textContent = `✓ ${msg}`;
+
       this.textareaEl.value = '';
-      this.close();
+      setTimeout(() => {
+        this.close();
+      }, 1000);
     } catch (err) {
       this.previewEl.classList.remove('hidden', 'status-success');
       this.previewEl.classList.add('status-error');

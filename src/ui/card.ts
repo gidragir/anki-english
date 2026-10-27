@@ -49,10 +49,17 @@ export class CardUI {
 
     // Keyboard shortcuts
     window.addEventListener('keydown', (e: KeyboardEvent) => {
-      // Don't trigger if user is typing in a modal textarea or input
-      const activeTag = document.activeElement?.tagName.toLowerCase();
-      if (activeTag === 'input' || activeTag === 'textarea') {
+      // Don't trigger shortcuts if any modal dialog is currently visible
+      const isModalOpen = Boolean(document.querySelector('.modal-overlay:not(.hidden)'));
+      if (isModalOpen) {
         return;
+      }
+
+      const activeTag = document.activeElement?.tagName.toLowerCase();
+      if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'button') {
+        if (e.code === 'Space' || e.code === 'Enter') {
+          return;
+        }
       }
 
       if (e.code === 'Space' || e.code === 'Enter') {

@@ -12,7 +12,6 @@ export class DeckStore {
   private currentIndex: number = 0;
   private isFlipped: boolean = false;
   private config: AppConfig = {};
-  private lastSha: string | null = null;
   private statusMessage: string = '';
   private isSyncing: boolean = false;
   private listeners: Set<StateListener> = new Set();
@@ -94,7 +93,6 @@ export class DeckStore {
       try {
         const repoData = await fetchRepoWords(this.config);
         this.words = repoData.words;
-        this.lastSha = repoData.sha;
         this.saveToLocalCache(this.words);
         this.setStatus(`Словарь синхронизирован с GitHub (${this.words.length} слов)`);
         this.isSyncing = false;
@@ -205,46 +203,55 @@ export class DeckStore {
     duplicates: number;
     syncedToGithub: boolean;
   }> {
-    const mergeResult = mergeWords(this.words, incoming);
-    this.words = mergeResult.merged;
-    this.saveToLocalCache(this.words);
-
     let syncedToGithub = false;
+    let addedCount = 0;
+    let duplicatesCount = 0;
 
-    // If GitHub config is active, push new dictionary to GitHub
+    // If GitHub config is active, fetch fresh remote words first to prevent data loss & conflicts
     if (this.config.githubToken && this.config.repoOwner && this.config.repoName) {
       this.isSyncing = true;
-      this.setStatus('Отправка обновленного словаря в GitHub...');
+      this.setStatus('Синхронизация с удаленным репозиторием GitHub...');
       this.notify();
 
       try {
-        // Refresh SHA if needed
-        let currentSha = this.lastSha;
-        if (!currentSha) {
-          const fresh = await fetchRepoWords(this.config);
-          currentSha = fresh.sha;
-        }
+        const fresh = await fetchRepoWords(this.config);
+        // Merge remote words with currently loaded words first, then with incoming
+        const baseMerge = mergeWords(fresh.words, this.words);
+        const fullMerge = mergeWords(baseMerge.merged, incoming);
 
-        const updateRes = await updateRepoWords(this.config, this.words, currentSha);
-        this.lastSha = updateRes.newSha;
+        this.words = fullMerge.merged;
+        addedCount = fullMerge.addedCount;
+        duplicatesCount = fullMerge.duplicatesCount;
+        this.saveToLocalCache(this.words);
+
+        this.setStatus('Отправка обновленного словаря в GitHub...');
+        this.notify();
+
+        await updateRepoWords(this.config, this.words, fresh.sha);
         syncedToGithub = true;
-        this.setStatus(`Словарь успешно обновлен в GitHub! (+${mergeResult.addedCount} слов)`);
+        this.setStatus(`Словарь успешно обновлен в GitHub! (+${addedCount} новых слов)`);
       } catch (err) {
         console.error('Failed to sync to GitHub:', err);
-        this.setStatus(`Сохранено локально, но ошибка GitHub: ${(err as Error).message}`);
+        this.setStatus(`Ошибка GitHub: ${(err as Error).message}`);
         throw err;
       } finally {
         this.isSyncing = false;
         this.notify();
       }
     } else {
-      this.setStatus(`Слова добавлены локально (+${mergeResult.addedCount} слов). Настройте GitHub для синхронизации.`);
+      // Local-only mode
+      const mergeResult = mergeWords(this.words, incoming);
+      this.words = mergeResult.merged;
+      addedCount = mergeResult.addedCount;
+      duplicatesCount = mergeResult.duplicatesCount;
+      this.saveToLocalCache(this.words);
+      this.setStatus(`Слова добавлены локально (+${addedCount} слов). Настройте GitHub для синхронизации.`);
       this.notify();
     }
 
     return {
-      added: mergeResult.addedCount,
-      duplicates: mergeResult.duplicatesCount,
+      added: addedCount,
+      duplicates: duplicatesCount,
       syncedToGithub,
     };
   }

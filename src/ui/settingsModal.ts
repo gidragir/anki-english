@@ -44,6 +44,12 @@ export class SettingsModalUI {
       }
     });
 
+    window.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !this.modalEl.classList.contains('hidden')) {
+        this.close();
+      }
+    });
+
     this.saveBtn.addEventListener('click', () => {
       this.handleSave();
     });
