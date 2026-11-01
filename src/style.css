@@ -132,9 +132,31 @@ body {
   transition: all 0.2s ease;
 }
 
-.icon-btn:hover {
+.icon-btn:hover:not(:disabled) {
   background-color: var(--surface-hover);
   transform: translateY(-1px);
+}
+
+.icon-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.icon-btn.is-speaking {
+  border-color: var(--accent-color);
+  background-color: var(--surface-hover);
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.45);
+  animation: pulse-speaking 1.2s infinite ease-in-out;
+}
+
+@keyframes pulse-speaking {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
 }
 
 /* Main Content & Card */

@@ -1,7 +1,9 @@
 import type { DeckStore } from '../state/store';
+import { SpeechService } from '../audio/tts';
 
 export class CardUI {
   private store: DeckStore;
+  private speechService: SpeechService;
   private cardEl: HTMLElement;
   private frontWordEl: HTMLElement;
   private backWordEl: HTMLElement;
@@ -9,10 +11,19 @@ export class CardUI {
   private prevBtn: HTMLButtonElement;
   private nextBtn: HTMLButtonElement;
   private shuffleBtn: HTMLButtonElement;
+  private ttsBtn: HTMLButtonElement;
   private statusEl: HTMLElement;
 
   constructor(store: DeckStore) {
     this.store = store;
+    this.speechService = new SpeechService(
+      (speaking) => {
+        this.updateTTSButtonState(speaking);
+      },
+      (errorMsg) => {
+        this.store.setStatus(errorMsg);
+      }
+    );
 
     this.cardEl = document.getElementById('flashcard') as HTMLElement;
     this.frontWordEl = document.getElementById('front-word') as HTMLElement;
@@ -21,6 +32,7 @@ export class CardUI {
     this.prevBtn = document.getElementById('btn-prev') as HTMLButtonElement;
     this.nextBtn = document.getElementById('btn-next') as HTMLButtonElement;
     this.shuffleBtn = document.getElementById('btn-shuffle') as HTMLButtonElement;
+    this.ttsBtn = document.getElementById('btn-tts') as HTMLButtonElement;
     this.statusEl = document.getElementById('quick-status') as HTMLElement;
 
     this.initEvents();
@@ -36,15 +48,23 @@ export class CardUI {
 
     // Navigation buttons
     this.prevBtn.addEventListener('click', () => {
+      this.speechService.stop();
       this.store.prev();
     });
 
     this.nextBtn.addEventListener('click', () => {
+      this.speechService.stop();
       this.store.next();
     });
 
     this.shuffleBtn.addEventListener('click', () => {
+      this.speechService.stop();
       this.store.shuffle();
+    });
+
+    // TTS button
+    this.ttsBtn.addEventListener('click', () => {
+      this.toggleSpeech();
     });
 
     // Keyboard shortcuts
@@ -67,12 +87,40 @@ export class CardUI {
         this.store.flip();
       } else if (e.code === 'ArrowRight' || e.code === 'KeyD') {
         e.preventDefault();
+        this.speechService.stop();
         this.store.next();
       } else if (e.code === 'ArrowLeft' || e.code === 'KeyA') {
         e.preventDefault();
+        this.speechService.stop();
         this.store.prev();
+      } else if (e.code === 'KeyS') {
+        e.preventDefault();
+        this.toggleSpeech();
       }
     });
+  }
+
+  private toggleSpeech(): void {
+    if (this.speechService.getIsSpeaking()) {
+      this.speechService.stop();
+      return;
+    }
+
+    const state = this.store.getState();
+    if (state.currentCard?.en) {
+      this.speechService.speak(state.currentCard.en);
+    }
+  }
+
+  private updateTTSButtonState(isSpeaking: boolean): void {
+    if (isSpeaking) {
+      this.ttsBtn.classList.add('is-speaking');
+      this.ttsBtn.title = 'Остановить озвучку (S)';
+    } else {
+      this.ttsBtn.classList.remove('is-speaking');
+      const hasCard = Boolean(this.store.getState().currentCard);
+      this.ttsBtn.title = hasCard ? 'Озвучить английский текст (S)' : 'Нет активной карточки';
+    }
   }
 
   public render(): void {
@@ -92,12 +140,18 @@ export class CardUI {
       this.counterEl.textContent = `${state.currentIndex + 1} / ${state.totalCount}`;
       this.prevBtn.disabled = state.totalCount <= 1;
       this.nextBtn.disabled = state.totalCount <= 1;
+      this.ttsBtn.disabled = !this.speechService.isSupported();
+      this.ttsBtn.title = this.speechService.isSupported()
+        ? 'Озвучить английский текст (S)'
+        : 'Синтез речи не поддерживается браузером';
     } else {
       this.frontWordEl.textContent = 'Нет слов';
       this.backWordEl.textContent = 'Добавьте слова';
       this.counterEl.textContent = '0 / 0';
       this.prevBtn.disabled = true;
       this.nextBtn.disabled = true;
+      this.ttsBtn.disabled = true;
+      this.ttsBtn.title = 'Нет слов для озвучки';
     }
 
     // Status message
